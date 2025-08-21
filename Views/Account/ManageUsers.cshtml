@@ -118,9 +118,9 @@
                 </td>
                 <td>
                   <div class="btn-group btn-group-sm" role="group">
-                    <button type="button" class="btn btn-outline-primary" title="View Details">
+                    <a asp-action="UserDetails" asp-controller="Account" asp-route-id="@user.Id" class="btn btn-outline-primary" title="View Details">
                       <i class="fas fa-eye"></i>
-                    </button>
+                    </a>
                     <form asp-action="ToggleUserStatus" asp-controller="Account" method="post"
                       class="d-inline user-status-form">
                       <input type="hidden" name="userId" value="@user.Id" />

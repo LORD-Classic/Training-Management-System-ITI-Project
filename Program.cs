@@ -128,6 +128,9 @@ namespace Training_Management_System_ITI_Project
 
       // Create default super admin user
       await CreateDefaultSuperAdminAsync(userManager);
+
+      // Sync Identity users into LegacyUsers for legacy features (e.g., instructor dropdowns)
+      await SyncLegacyUsersAsync(context, userManager);
     }
 
     /// <summary>
@@ -178,6 +181,60 @@ namespace Training_Management_System_ITI_Project
           Console.WriteLine("Please change this password immediately after first login!");
         }
       }
+    }
+
+    private static async Task SyncLegacyUsersAsync(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
+    {
+      var identityUsers = userManager.Users.ToList();
+
+      // Load existing legacy users into lookup by email
+      var existingLegacyUsers = context.LegacyUsers.ToList();
+      var emailToLegacyUser = existingLegacyUsers.ToDictionary(u => u.Email.ToLower());
+
+      foreach (var identityUser in identityUsers)
+      {
+        var emailKey = (identityUser.Email ?? string.Empty).ToLower();
+        if (string.IsNullOrWhiteSpace(emailKey))
+        {
+          continue;
+        }
+
+        if (emailToLegacyUser.TryGetValue(emailKey, out var legacyUser))
+        {
+          // Update name/role if changed
+          var desiredName = identityUser.FullName;
+          var desiredRole = identityUser.Role;
+
+          bool changed = false;
+          if (legacyUser.Name != desiredName)
+          {
+            legacyUser.Name = desiredName;
+            changed = true;
+          }
+          if (legacyUser.Role != desiredRole)
+          {
+            legacyUser.Role = desiredRole;
+            changed = true;
+          }
+          if (changed)
+          {
+            context.LegacyUsers.Update(legacyUser);
+          }
+        }
+        else
+        {
+          // Insert new legacy user mapped from identity user
+          var newLegacyUser = new User
+          {
+            Name = identityUser.FullName,
+            Email = identityUser.Email!,
+            Role = identityUser.Role
+          };
+          context.LegacyUsers.Add(newLegacyUser);
+        }
+      }
+
+      await context.SaveChangesAsync();
     }
   }
 }
