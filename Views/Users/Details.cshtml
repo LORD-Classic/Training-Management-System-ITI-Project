@@ -1,0 +1,42 @@
+@model Training_Management_System_ITI_Project.Models.User
+
+@{
+    ViewData["Title"] = "User Details";
+}
+
+<h2>User Details</h2>
+
+<div>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Name)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Name)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Email)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Email)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Role)
+        </dt>
+        <dd class="col-sm-10">
+            <span class="badge badge-@(Model.Role == Training_Management_System_ITI_Project.Models.UserRole.Admin ? "danger" : 
+                                       Model.Role == Training_Management_System_ITI_Project.Models.UserRole.Instructor ? "primary" : "success")">
+                @Html.DisplayFor(model => model.Role)
+            </span>
+        </dd>
+    </dl>
+</div>
+<div>
+    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">Edit</a>
+    @if (Model.Role == Training_Management_System_ITI_Project.Models.UserRole.Trainee)
+    {
+        <a asp-controller="Grades" asp-action="TraineeGrades" asp-route-id="@Model.Id" class="btn btn-info">View Grades</a>
+    }
+    <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+</div>

@@ -1,0 +1,117 @@
+@model Training_Management_System_ITI_Project.ViewModels.UserProfileViewModel
+@{
+    ViewData["Title"] = "My Profile";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-info text-white">
+                <h2><i class="fas fa-user me-2"></i>My Profile</h2>
+                <p class="mb-0">View and manage your account information</p>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 text-center">
+                        <div class="avatar-lg bg-primary rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3">
+                            <span class="text-white display-6 fw-bold">@Model.FullName.Substring(0, 1).ToUpper()</span>
+                        </div>
+                        <h4>@Model.FullName</h4>
+                        @switch (Model.Role)
+                        {
+                            case Training_Management_System_ITI_Project.Models.UserRole.SuperAdmin:
+                                <span class="badge bg-danger fs-6"><i class="fas fa-crown me-1"></i>Super Administrator</span>
+                                break;
+                            case Training_Management_System_ITI_Project.Models.UserRole.Admin:
+                                <span class="badge bg-warning text-dark fs-6"><i class="fas fa-user-shield me-1"></i>Administrator</span>
+                                break;
+                            case Training_Management_System_ITI_Project.Models.UserRole.Instructor:
+                                <span class="badge bg-info fs-6"><i class="fas fa-chalkboard-teacher me-1"></i>Instructor</span>
+                                break;
+                            case Training_Management_System_ITI_Project.Models.UserRole.Trainee:
+                                <span class="badge bg-success fs-6"><i class="fas fa-graduation-cap me-1"></i>Trainee</span>
+                                break;
+                        }
+                    </div>
+                    <div class="col-md-8">
+                        <h5><i class="fas fa-info-circle me-2"></i>Account Information</h5>
+                        <hr>
+                        
+                        <div class="row mb-3">
+                            <div class="col-sm-4">
+                                <strong><i class="fas fa-envelope me-1"></i>Email:</strong>
+                            </div>
+                            <div class="col-sm-8">
+                                @Model.Email
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-sm-4">
+                                <strong><i class="fas fa-user-tag me-1"></i>Role:</strong>
+                            </div>
+                            <div class="col-sm-8">
+                                @Model.Role.ToString()
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-sm-4">
+                                <strong><i class="fas fa-toggle-on me-1"></i>Status:</strong>
+                            </div>
+                            <div class="col-sm-8">
+                                @if (Model.IsActive)
+                                {
+                                    <span class="badge bg-success"><i class="fas fa-check me-1"></i>Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary"><i class="fas fa-times me-1"></i>Inactive</span>
+                                }
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-sm-4">
+                                <strong><i class="fas fa-calendar-plus me-1"></i>Member Since:</strong>
+                            </div>
+                            <div class="col-sm-8">
+                                @Model.CreatedAt.ToString("MMMM dd, yyyy")
+                            </div>
+                        </div>
+                        
+                        @if (Model.UpdatedAt.HasValue)
+                        {
+                            <div class="row mb-3">
+                                <div class="col-sm-4">
+                                    <strong><i class="fas fa-edit me-1"></i>Last Updated:</strong>
+                                </div>
+                                <div class="col-sm-8">
+                                    @Model.UpdatedAt.Value.ToString("MMMM dd, yyyy 'at' hh:mm tt")
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+                
+                <hr>
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <a href="@Url.Action("ChangePassword", "Account")" class="btn btn-outline-primary">
+                        <i class="fas fa-key me-2"></i>Change Password
+                    </a>
+                    <a href="@Url.Action("Index", "Home")" class="btn btn-primary">
+                        <i class="fas fa-tachometer-alt me-2"></i>Go to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .avatar-lg {
+        width: 120px;
+        height: 120px;
+    }
+</style>
