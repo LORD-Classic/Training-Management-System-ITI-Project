@@ -15,6 +15,7 @@ namespace Training_Management_System_ITI_Project.Controllers
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly ILogger<AccountController> _logger;
+    private readonly Training_Management_System_ITI_Project.Data.ApplicationDbContext _dbContext;
 
     /// <summary>
     /// Initializes the AccountController with required Identity services
@@ -25,11 +26,13 @@ namespace Training_Management_System_ITI_Project.Controllers
     public AccountController(
         UserManager<ApplicationUser> userManager,
         SignInManager<ApplicationUser> signInManager,
-        ILogger<AccountController> logger)
+        ILogger<AccountController> logger,
+        Training_Management_System_ITI_Project.Data.ApplicationDbContext dbContext)
     {
       _userManager = userManager;
       _signInManager = signInManager;
       _logger = logger;
+      _dbContext = dbContext;
     }
 
     /// <summary>
@@ -164,6 +167,10 @@ namespace Training_Management_System_ITI_Project.Controllers
         // Add user to appropriate role
         await _userManager.AddToRoleAsync(user, model.Role.ToString());
 
+        // Mirror to LegacyUsers for legacy features (e.g., courses instructor list)
+        _dbContext.LegacyUsers.Add(new User { Name = user.FullName, Email = user.Email!, Role = user.Role });
+        await _dbContext.SaveChangesAsync();
+
         TempData["SuccessMessage"] = $"User {model.FullName} has been created successfully.";
         return RedirectToAction("ManageUsers");
       }
@@ -224,6 +231,10 @@ namespace Training_Management_System_ITI_Project.Controllers
 
         // Add user to Trainee role
         await _userManager.AddToRoleAsync(user, UserRole.Trainee.ToString());
+
+        // Mirror to LegacyUsers for legacy features
+        _dbContext.LegacyUsers.Add(new User { Name = user.FullName, Email = user.Email!, Role = user.Role });
+        await _dbContext.SaveChangesAsync();
 
         // Auto-login the new student
         await _signInManager.SignInAsync(user, isPersistent: false);
@@ -452,6 +463,47 @@ namespace Training_Management_System_ITI_Project.Controllers
       {
         ModelState.AddModelError(string.Empty, error.Description);
       }
+
+      return View(model);
+    }
+
+    /// <summary>
+    /// Displays user details for administrators
+    /// </summary>
+    /// <param name="id">ID of the user to view</param>
+    /// <returns>User details view or access denied</returns>
+    [HttpGet]
+    [Authorize(Roles = "Admin,SuperAdmin")]
+    public async Task<IActionResult> UserDetails(string id)
+    {
+      if (string.IsNullOrWhiteSpace(id))
+      {
+        return NotFound();
+      }
+
+      var currentUser = await _userManager.GetUserAsync(User);
+      var targetUser = await _userManager.FindByIdAsync(id);
+      if (targetUser == null)
+      {
+        return NotFound();
+      }
+
+      // Non-SuperAdmins cannot view SuperAdmins
+      if (targetUser.Role == UserRole.SuperAdmin && currentUser?.Role != UserRole.SuperAdmin)
+      {
+        return Forbid();
+      }
+
+      var model = new UserProfileViewModel
+      {
+        Id = targetUser.Id,
+        FullName = targetUser.FullName,
+        Email = targetUser.Email!,
+        Role = targetUser.Role,
+        IsActive = targetUser.IsActive,
+        CreatedAt = targetUser.CreatedAt,
+        UpdatedAt = targetUser.UpdatedAt
+      };
 
       return View(model);
     }
