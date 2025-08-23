@@ -1,42 +1,97 @@
 @model Training_Management_System_ITI_Project.Models.User
-
 @{
     ViewData["Title"] = "User Details";
 }
 
-<h2>User Details</h2>
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-user me-2"></i>User Details
+        </h1>
+        <div>
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning me-2">
+                <i class="fas fa-edit me-2"></i>Edit
+            </a>
+            <a asp-action="Index" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to List
+            </a>
+        </div>
+    </div>
 
-<div>
-    <hr />
-    <dl class="row">
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.Name)
-        </dt>
-        <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.Name)
-        </dd>
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.Email)
-        </dt>
-        <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.Email)
-        </dd>
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.Role)
-        </dt>
-        <dd class="col-sm-10">
-            <span class="badge badge-@(Model.Role == Training_Management_System_ITI_Project.Models.UserRole.Admin ? "danger" : 
-                                       Model.Role == Training_Management_System_ITI_Project.Models.UserRole.Instructor ? "primary" : "success")">
-                @Html.DisplayFor(model => model.Role)
-            </span>
-        </dd>
-    </dl>
-</div>
-<div>
-    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">Edit</a>
-    @if (Model.Role == Training_Management_System_ITI_Project.Models.UserRole.Trainee)
-    {
-        <a asp-controller="Grades" asp-action="TraineeGrades" asp-route-id="@Model.Id" class="btn btn-info">View Grades</a>
-    }
-    <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">User Information</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">User ID</label>
+                            <p class="form-control-plaintext">@Model.Id</p>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Full Name</label>
+                            <p class="form-control-plaintext">@Model.Name</p>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Email Address</label>
+                            <p class="form-control-plaintext">@Model.Email</p>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">User Role</label>
+                            <p class="form-control-plaintext">
+                                <span class="badge bg-@(Model.Role switch {
+                                    Training_Management_System_ITI_Project.Models.UserRole.Trainee => "success",
+                                    Training_Management_System_ITI_Project.Models.UserRole.Instructor => "info",
+                                    Training_Management_System_ITI_Project.Models.UserRole.Admin => "warning",
+                                    _ => "secondary"
+                                })">
+                                    @Model.Role
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">
+                            <i class="fas fa-edit me-2"></i>Edit User
+                        </a>
+                        
+                        <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-danger">
+                            <i class="fas fa-trash me-2"></i>Delete User
+                        </a>
+                        
+                        @if (Model.Role == Training_Management_System_ITI_Project.Models.UserRole.Trainee)
+                        {
+                            <a href="#" class="btn btn-info">
+                                <i class="fas fa-chart-line me-2"></i>View Grades
+                            </a>
+                        }
+                        
+                        @if (Model.Role == Training_Management_System_ITI_Project.Models.UserRole.Instructor)
+                        {
+                            <a href="#" class="btn btn-success">
+                                <i class="fas fa-book me-2"></i>View Courses
+                            </a>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>

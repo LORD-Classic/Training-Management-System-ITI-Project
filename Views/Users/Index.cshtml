@@ -1,73 +1,136 @@
 @model Training_Management_System_ITI_Project.ViewModels.UserListViewModel
-
 @{
-    ViewData["Title"] = "Users";
+    ViewData["Title"] = "User Management";
 }
 
-<h2>Users Management</h2>
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-users me-2"></i>User Management
+        </h1>
+        <a asp-action="Create" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Add New User
+        </a>
+    </div>
 
-<p>
-    <a asp-action="Create" class="btn btn-primary">Create New User</a>
-</p>
-
-<form asp-action="Index" method="get" class="mb-3">
-    <div class="row">
-        <div class="col-md-4">
-            <select name="filterByRole" class="form-control" onchange="this.form.submit()">
-                <option value="">-- All Roles --</option>
-                @foreach (var role in Enum.GetValues<Training_Management_System_ITI_Project.Models.UserRole>())
-                {
-                    <option value="@role" selected="@(Model.FilterByRole == role)">@role</option>
-                }
-            </select>
+    <!-- Search and Filter Section -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Search & Filter</h6>
         </div>
-        <div class="col-md-2">
-            <a asp-action="Index" class="btn btn-secondary">Clear Filter</a>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label for="searchTerm" class="form-label">Search</label>
+                    <input type="text" class="form-control" id="searchTerm" name="searchTerm" 
+                           value="@Model.SearchTerm" placeholder="Search by name or email...">
+                </div>
+                <div class="col-md-3">
+                    <label for="selectedRole" class="form-label">Filter by Role</label>
+                    <select class="form-select" id="selectedRole" name="selectedRole">
+                        <option value="">All Roles</option>
+                        <option value="Trainee" selected="@(Model.SelectedRole == Training_Management_System_ITI_Project.Models.UserRole.Trainee)">Trainee</option>
+                        <option value="Instructor" selected="@(Model.SelectedRole == Training_Management_System_ITI_Project.Models.UserRole.Instructor)">Instructor</option>
+                        <option value="Admin" selected="@(Model.SelectedRole == Training_Management_System_ITI_Project.Models.UserRole.Admin)">Admin</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-search me-2"></i>Search
+                    </button>
+                    <a asp-action="Index" class="btn btn-secondary">
+                        <i class="fas fa-times me-2"></i>Clear
+                    </a>
+                </div>
+            </form>
         </div>
     </div>
-</form>
 
-<div class="table-responsive">
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var item in Model.Users)
+    <!-- Users List -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">Users (@Model.TotalCount)</h6>
+        </div>
+        <div class="card-body">
+            @if (!Model.Users.Any())
             {
-                <tr>
-                    <td>@Html.DisplayFor(modelItem => item.Name)</td>
-                    <td>@Html.DisplayFor(modelItem => item.Email)</td>
-                    <td>
-                        <span class="badge badge-@(item.Role == Training_Management_System_ITI_Project.Models.UserRole.Admin ? "danger" : 
-                                                   item.Role == Training_Management_System_ITI_Project.Models.UserRole.Instructor ? "primary" : "success")">
-                            @Html.DisplayFor(modelItem => item.Role)
-                        </span>
-                    </td>
-                    <td>
-                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning">Edit</a>
-                        <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-info">Details</a>
-                        @if (item.Role == Training_Management_System_ITI_Project.Models.UserRole.Trainee)
-                        {
-                            <a asp-controller="Grades" asp-action="TraineeGrades" asp-route-id="@item.Id" class="btn btn-sm btn-secondary">Grades</a>
-                        }
-                        <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-danger">Delete</a>
-                    </td>
-                </tr>
+                <div class="text-center py-4">
+                    <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No users found</h5>
+                    <p class="text-muted">Try adjusting your search criteria or create a new user.</p>
+                </div>
             }
-        </tbody>
-    </table>
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover" id="usersTable">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var user in Model.Users)
+                            {
+                                <tr>
+                                    <td>@user.Id</td>
+                                    <td>@user.Name</td>
+                                    <td>@user.Email</td>
+                                    <td>
+                                        <span class="badge bg-@(user.Role switch {
+                                            Training_Management_System_ITI_Project.Models.UserRole.Trainee => "success",
+                                            Training_Management_System_ITI_Project.Models.UserRole.Instructor => "info",
+                                            Training_Management_System_ITI_Project.Models.UserRole.Admin => "warning",
+                                            _ => "secondary"
+                                        })">
+                                            @user.Role
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a asp-action="Details" asp-route-id="@user.Id" 
+                                               class="btn btn-sm btn-info" title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a asp-action="Edit" asp-route-id="@user.Id" 
+                                               class="btn btn-sm btn-warning" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a asp-action="Delete" asp-route-id="@user.Id" 
+                                               class="btn btn-sm btn-danger" title="Delete">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
 </div>
 
-@if (!Model.Users.Any())
-{
-    <div class="alert alert-info">
-        <h4>No users found</h4>
-        <p>@(Model.FilterByRole.HasValue ? $"No users with role '{Model.FilterByRole}' found." : "No users have been created yet.")</p>
-    </div>
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Initialize DataTable
+            $('#usersTable').DataTable({
+                "pageLength": 10,
+                "order": [[1, "asc"]], // Sort by name by default
+                "language": {
+                    "search": "Search users:",
+                    "lengthMenu": "Show _MENU_ users per page",
+                    "info": "Showing _START_ to _END_ of _TOTAL_ users",
+                    "infoEmpty": "Showing 0 to 0 of 0 users",
+                    "infoFiltered": "(filtered from _MAX_ total users)"
+                }
+            });
+        });
+    </script>
 }
