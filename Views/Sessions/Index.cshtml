@@ -1,65 +1,164 @@
-@model Training_Management_System_ITI_Project.ViewModels.SessionSearchViewModel
-
+@model Training_Management_System_ITI_Project.ViewModels.SessionListViewModel
 @{
-    ViewData["Title"] = "Sessions";
+    ViewData["Title"] = "Session Management";
 }
 
-<h2>Sessions Management</h2>
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-calendar-alt me-2"></i>Session Management
+        </h1>
+        <a asp-action="Create" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Add New Session
+        </a>
+    </div>
 
-<p>
-    <a asp-action="Create" class="btn btn-primary">Create New Session</a>
-</p>
-
-<form asp-action="Index" method="get" class="mb-3">
-    <div class="row">
-        <div class="col-md-6">
-            <div class="input-group">
-                <input type="text" name="courseNameSearch" value="@Model.CourseNameSearch" class="form-control" placeholder="Search by course name..." />
-                <div class="input-group-append">
-                    <button class="btn btn-outline-secondary" type="submit">Search</button>
-                </div>
-            </div>
+    <!-- Search and Filter Section -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Search & Filter</h6>
         </div>
-        <div class="col-md-2">
-            <a asp-action="Index" class="btn btn-secondary">Clear</a>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label for="searchTerm" class="form-label">Search by Course</label>
+                    <input type="text" class="form-control" id="searchTerm" name="searchTerm" 
+                           value="@Model.SearchTerm" placeholder="Search by course name...">
+                </div>
+                <div class="col-md-3">
+                    <label for="selectedCourseId" class="form-label">Filter by Course</label>
+                    <select class="form-select" id="selectedCourseId" name="selectedCourseId">
+                        <option value="">All Courses</option>
+                        @foreach (var course in Model.AvailableCourses)
+                        {
+                            <option value="@course.Id" selected="@(Model.SelectedCourseId == course.Id)">@course.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="selectedDate" class="form-label">Filter by Date</label>
+                    <input type="date" class="form-control" id="selectedDate" name="selectedDate" 
+                           value="@(Model.SelectedDate?.ToString("yyyy-MM-dd"))">
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-search me-2"></i>Search
+                    </button>
+                    <a asp-action="Index" class="btn btn-secondary">
+                        <i class="fas fa-times me-2"></i>Clear
+                    </a>
+                </div>
+            </form>
         </div>
     </div>
-</form>
 
-<div class="table-responsive">
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Course</th>
-                <th>Instructor</th>
-                <th>Start Date</th>
-                <th>End Date</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var item in Model.Sessions)
+    <!-- Sessions List -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">Sessions (@Model.TotalCount)</h6>
+        </div>
+        <div class="card-body">
+            @if (!Model.Sessions.Any())
             {
-                <tr>
-                    <td>@Html.DisplayFor(modelItem => item.Course.Name)</td>
-                    <td>@(item.Course.Instructor?.Name ?? "Not Assigned")</td>
-                    <td>@Html.DisplayFor(modelItem => item.StartDate)</td>
-                    <td>@Html.DisplayFor(modelItem => item.EndDate)</td>
-                    <td>
-                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning">Edit</a>
-                        <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-info">Details</a>
-                        <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-danger">Delete</a>
-                    </td>
-                </tr>
+                <div class="text-center py-4">
+                    <i class="fas fa-calendar-alt fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No sessions found</h5>
+                    <p class="text-muted">Try adjusting your search criteria or create a new session.</p>
+                </div>
             }
-        </tbody>
-    </table>
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover" id="sessionsTable">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>ID</th>
+                                <th>Course</th>
+                                <th>Start Date & Time</th>
+                                <th>End Date & Time</th>
+                                <th>Duration</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var session in Model.Sessions)
+                            {
+                                var duration = session.EndDate - session.StartDate;
+                                var isUpcoming = session.StartDate > DateTime.Now;
+                                var isToday = session.StartDate.Date == DateTime.Today;
+                                
+                                <tr class="@(isToday ? "table-warning" : "")">
+                                    <td>@session.Id</td>
+                                    <td>
+                                        <span class="text-primary fw-bold">@session.Course?.Name</span>
+                                        @if (session.Course?.Instructor != null)
+                                        {
+                                            <br><small class="text-muted">Instructor: @session.Course.Instructor.Name</small>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (isUpcoming)
+                                        {
+                                            <span class="badge bg-success">@session.StartDate.ToString("MMM dd, yyyy HH:mm")</span>
+                                        }
+                                        else if (isToday)
+                                        {
+                                            <span class="badge bg-warning">@session.StartDate.ToString("MMM dd, yyyy HH:mm")</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">@session.StartDate.ToString("MMM dd, yyyy HH:mm")</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">@session.EndDate.ToString("MMM dd, yyyy HH:mm")</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark">
+                                            @duration.Hours hr @duration.Minutes min
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a asp-action="Details" asp-route-id="@session.Id" 
+                                               class="btn btn-sm btn-info" title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a asp-action="Edit" asp-route-id="@session.Id" 
+                                               class="btn btn-sm btn-warning" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a asp-action="Delete" asp-route-id="@session.Id" 
+                                               class="btn btn-sm btn-danger" title="Delete">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
 </div>
 
-@if (!Model.Sessions.Any())
-{
-    <div class="alert alert-info">
-        <h4>No sessions found</h4>
-        <p>@(string.IsNullOrEmpty(Model.CourseNameSearch) ? "No sessions have been created yet." : $"No sessions match your search for '{Model.CourseNameSearch}'.")</p>
-    </div>
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Initialize DataTable
+            $('#sessionsTable').DataTable({
+                "pageLength": 10,
+                "order": [[2, "asc"]], // Sort by start date by default
+                "language": {
+                    "search": "Search sessions:",
+                    "lengthMenu": "Show _MENU_ sessions per page",
+                    "info": "Showing _START_ to _END_ of _TOTAL_ sessions",
+                    "infoEmpty": "Showing 0 to 0 of 0 sessions",
+                    "infoFiltered": "(filtered from _MAX_ total sessions)"
+                }
+            });
+        });
+    </script>
 }
