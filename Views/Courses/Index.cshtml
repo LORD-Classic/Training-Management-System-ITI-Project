@@ -1,178 +1,139 @@
-@model Training_Management_System_ITI_Project.ViewModels.CourseSearchViewModel
-
+@model Training_Management_System_ITI_Project.ViewModels.CourseListViewModel
 @{
-    ViewData["Title"] = "Courses";
+    ViewData["Title"] = "Course Management";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4 animate-fade-in-up">
-    <div>
-        <h1 class="display-6 fw-bold text-gradient-primary">
-            <i class="fas fa-book me-2"></i>Courses Management
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-book me-2"></i>Course Management
         </h1>
-        <p class="text-muted mb-0">Manage and organize your training courses</p>
+        <a asp-action="Create" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Add New Course
+        </a>
     </div>
-    <div>
-        @if (User.IsInRole("Instructor") || User.IsInRole("Admin") || User.IsInRole("SuperAdmin"))
-        {
-            <a asp-action="Create" class="btn btn-gradient-primary shadow-enhanced">
-                <i class="fas fa-plus me-2"></i>Create New Course
-            </a>
-        }
-    </div>
-</div>
 
-<!-- Search Section -->
-<div class="card card-enhanced mb-4 animate-fade-in-up">
-    <div class="card-header">
-        <h5 class="mb-0">
-            <i class="fas fa-search me-2"></i>Search Courses
-        </h5>
-    </div>
-    <div class="card-body">
-        <form asp-action="Index" method="get" class="form-enhanced">
-            <div class="row g-3">
-                <div class="col-md-8">
-                    <div class="input-group">
-                        <span class="input-group-text">
-                            <i class="fas fa-search"></i>
-                        </span>
-                        <input type="text" name="searchTerm" value="@Model.SearchTerm" 
-                               class="form-control" placeholder="Search by course name or category..." />
-                        <button class="btn btn-gradient-primary" type="submit">
-                            <i class="fas fa-search me-1"></i>Search
-                        </button>
-                    </div>
-                </div>
+    <!-- Search and Filter Section -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Search & Filter</h6>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
                 <div class="col-md-4">
-                    <a asp-action="Index" class="btn btn-outline-secondary w-100">
-                        <i class="fas fa-times me-1"></i>Clear Filter
+                    <label for="searchTerm" class="form-label">Search</label>
+                    <input type="text" class="form-control" id="searchTerm" name="searchTerm" 
+                           value="@Model.SearchTerm" placeholder="Search by name or category...">
+                </div>
+                <div class="col-md-3">
+                    <label for="selectedCategory" class="form-label">Filter by Category</label>
+                    <select class="form-select" id="selectedCategory" name="selectedCategory">
+                        <option value="">All Categories</option>
+                        @foreach (var category in Model.AvailableCategories)
+                        {
+                            <option value="@category" selected="@(Model.SelectedCategory == category)">@category</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-search me-2"></i>Search
+                    </button>
+                    <a asp-action="Index" class="btn btn-secondary">
+                        <i class="fas fa-times me-2"></i>Clear
                     </a>
                 </div>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
-</div>
 
-<!-- Courses Table -->
-<div class="card card-enhanced animate-fade-in-up">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">
-            <i class="fas fa-list me-2"></i>All Courses (@Model.Courses.Count())
-        </h5>
-        @if (!string.IsNullOrEmpty(Model.SearchTerm))
-        {
-            <span class="badge bg-info">
-                <i class="fas fa-filter me-1"></i>Filtered by: "@Model.SearchTerm"
-            </span>
-        }
-    </div>
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-enhanced mb-0">
-                <thead>
-                    <tr>
-                        <th><i class="fas fa-book me-1"></i>Course Name</th>
-                        <th><i class="fas fa-tag me-1"></i>Category</th>
-                        <th><i class="fas fa-user-tie me-1"></i>Instructor</th>
-                        <th class="text-center"><i class="fas fa-cogs me-1"></i>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (Model.Courses.Any())
-                    {
-                        @foreach (var item in Model.Courses)
-                        {
+    <!-- Courses List -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">Courses (@Model.TotalCount)</h6>
+        </div>
+        <div class="card-body">
+            @if (!Model.Courses.Any())
+            {
+                <div class="text-center py-4">
+                    <i class="fas fa-book fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No courses found</h5>
+                    <p class="text-muted">Try adjusting your search criteria or create a new course.</p>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover" id="coursesTable">
+                        <thead class="table-dark">
                             <tr>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <div class="me-3">
-                                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" 
-                                                 style="width: 40px; height: 40px;">
-                                                <i class="fas fa-book"></i>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <h6 class="mb-0 fw-bold">@Html.DisplayFor(modelItem => item.Name)</h6>
-                                            <small class="text-muted">Course ID: @item.Id</small>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <span class="badge bg-light text-dark border">
-                                        @Html.DisplayFor(modelItem => item.Category)
-                                    </span>
-                                </td>
-                                <td>
-                                    @if (item.Instructor != null)
-                                    {
-                                        <div class="d-flex align-items-center">
-                                            <i class="fas fa-user-circle text-primary me-2"></i>
-                                            <span>@item.Instructor.Name</span>
-                                        </div>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted">
-                                            <i class="fas fa-user-slash me-1"></i>Not Assigned
-                                        </span>
-                                    }
-                                </td>
-                                <td class="text-center">
-                                    <div class="btn-group" role="group">
-                                        <a asp-action="Details" asp-route-id="@item.Id" 
-                                           class="btn btn-outline-info btn-sm" title="View Details">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        @if (User.IsInRole("Instructor") || User.IsInRole("Admin") || User.IsInRole("SuperAdmin"))
-                                        {
-                                            <a asp-action="Edit" asp-route-id="@item.Id" 
-                                               class="btn btn-outline-warning btn-sm" title="Edit">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                        }
-                                        @if (User.IsInRole("Admin") || User.IsInRole("SuperAdmin"))
-                                        {
-                                            <a asp-action="Delete" asp-route-id="@item.Id" 
-                                               class="btn btn-outline-danger btn-sm" title="Delete">
-                                                <i class="fas fa-trash"></i>
-                                            </a>
-                                        }
-                                    </div>
-                                </td>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Category</th>
+                                <th>Instructor</th>
+                                <th>Actions</th>
                             </tr>
-                        }
-                    }
-                    else
-                    {
-                        <tr>
-                            <td colspan="4" class="text-center py-5">
-                                <div class="text-muted">
-                                    <i class="fas fa-search fa-3x mb-3"></i>
-                                    <h5>No courses found</h5>
-                                    <p>@if (!string.IsNullOrEmpty(Model.SearchTerm))
+                        </thead>
+                        <tbody>
+                            @foreach (var course in Model.Courses)
+                            {
+                                <tr>
+                                    <td>@course.Id</td>
+                                    <td>@course.Name</td>
+                                    <td>
+                                        <span class="badge bg-info">@course.Category</span>
+                                    </td>
+                                    <td>
+                                        @if (course.Instructor != null)
                                         {
-                                            <span>No courses match your search criteria. Try adjusting your search term.</span>
+                                            <span class="text-primary">@course.Instructor.Name</span>
                                         }
                                         else
                                         {
-                                            <span>No courses available. Create your first course to get started.</span>
+                                            <span class="text-muted">Not Assigned</span>
                                         }
-                                    </p>
-                                </div>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a asp-action="Details" asp-route-id="@course.Id" 
+                                               class="btn btn-sm btn-info" title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a asp-action="Edit" asp-route-id="@course.Id" 
+                                               class="btn btn-sm btn-warning" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a asp-action="Delete" asp-route-id="@course.Id" 
+                                               class="btn btn-sm btn-danger" title="Delete">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
         </div>
     </div>
 </div>
 
-
-@if (!Model.Courses.Any())
-{
-    <div class="alert alert-info">
-        <h4>No courses found</h4>
-        <p>@(string.IsNullOrEmpty(Model.SearchTerm) ? "No courses have been created yet." : $"No courses match your search for '{Model.SearchTerm}'.")</p>
-    </div>
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Initialize DataTable
+            $('#coursesTable').DataTable({
+                "pageLength": 10,
+                "order": [[1, "asc"]], // Sort by name by default
+                "language": {
+                    "search": "Search courses:",
+                    "lengthMenu": "Show _MENU_ courses per page",
+                    "info": "Showing _START_ to _END_ of _TOTAL_ courses",
+                    "infoEmpty": "Showing 0 to 0 of 0 courses",
+                    "infoFiltered": "(filtered from _MAX_ total courses)"
+                }
+            });
+        });
+    </script>
 }

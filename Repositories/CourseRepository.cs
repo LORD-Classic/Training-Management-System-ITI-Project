@@ -4,47 +4,93 @@ using Training_Management_System_ITI_Project.Models;
 
 namespace Training_Management_System_ITI_Project.Repositories
 {
+    /// <summary>
+    /// Repository implementation for Course entity operations.
+    /// Provides data access methods for course management functionality.
+    /// </summary>
     public class CourseRepository : Repository<Course>, ICourseRepository
     {
         public CourseRepository(ApplicationDbContext context) : base(context)
         {
         }
 
+        /// <summary>
+        /// Gets all courses with instructor information
+        /// </summary>
         public async Task<IEnumerable<Course>> GetCoursesWithInstructorAsync()
         {
-            return await _dbSet
+            return await _context.Courses
                 .Include(c => c.Instructor)
+                .OrderBy(c => c.Name)
                 .ToListAsync();
         }
 
-        public async Task<bool> IsNameUniqueAsync(string name, int? excludeId = null)
+        /// <summary>
+        /// Gets courses by category
+        /// </summary>
+        public async Task<IEnumerable<Course>> GetByCategoryAsync(string category)
         {
-            var query = _dbSet.Where(c => c.Name.ToLower() == name.ToLower());
-            
-            if (excludeId.HasValue)
-            {
-                query = query.Where(c => c.Id != excludeId.Value);
-            }
-
-            return !await query.AnyAsync();
+            return await _context.Courses
+                .Include(c => c.Instructor)
+                .Where(c => c.Category.ToLower() == category.ToLower())
+                .OrderBy(c => c.Name)
+                .ToListAsync();
         }
 
-        public async Task<IEnumerable<Course>> SearchByNameOrCategoryAsync(string searchTerm)
+        /// <summary>
+        /// Gets courses assigned to a specific instructor
+        /// </summary>
+        public async Task<IEnumerable<Course>> GetByInstructorAsync(int instructorId)
         {
-            if (string.IsNullOrEmpty(searchTerm))
+            return await _context.Courses
+                .Include(c => c.Instructor)
+                .Where(c => c.InstructorId == instructorId)
+                .OrderBy(c => c.Name)
+                .ToListAsync();
+        }
+
+        /// <summary>
+        /// Searches courses by name or category
+        /// </summary>
+        public async Task<IEnumerable<Course>> SearchAsync(string searchTerm)
+        {
+            if (string.IsNullOrWhiteSpace(searchTerm))
                 return await GetCoursesWithInstructorAsync();
 
-            return await _dbSet
+            searchTerm = searchTerm.ToLower();
+            return await _context.Courses
                 .Include(c => c.Instructor)
-                .Where(c => c.Name.Contains(searchTerm) || c.Category.Contains(searchTerm))
+                .Where(c => c.Name.ToLower().Contains(searchTerm) || 
+                           c.Category.ToLower().Contains(searchTerm))
+                .OrderBy(c => c.Name)
                 .ToListAsync();
         }
 
-        public override async Task<Course?> GetByIdAsync(int id)
+        /// <summary>
+        /// Checks if a course name is already in use
+        /// </summary>
+        public async Task<bool> IsNameInUseAsync(string name, int? excludeCourseId = null)
         {
-            return await _dbSet
-                .Include(c => c.Instructor)
-                .FirstOrDefaultAsync(c => c.Id == id);
+            if (excludeCourseId.HasValue)
+            {
+                return await _context.Courses
+                    .AnyAsync(c => c.Name.ToLower() == name.ToLower() && c.Id != excludeCourseId.Value);
+            }
+
+            return await _context.Courses
+                .AnyAsync(c => c.Name.ToLower() == name.ToLower());
+        }
+
+        /// <summary>
+        /// Gets all available categories in the system
+        /// </summary>
+        public async Task<IEnumerable<string>> GetCategoriesAsync()
+        {
+            return await _context.Courses
+                .Select(c => c.Category)
+                .Distinct()
+                .OrderBy(c => c)
+                .ToListAsync();
         }
     }
 }
