@@ -8,8 +8,9 @@ namespace Training_Management_System_ITI_Project
 {
   /// <summary>
   /// Main entry point for the Training Management System application.
-  /// This ASP.NET Core MVC application manages courses, sessions, users, and grades
-  /// using the Repository Pattern for data access and ASP.NET Core Identity for authentication.
+  /// This ASP.NET Core MVC application provides comprehensive training management
+  /// with full CRUD operations for Users, Courses, Sessions, and Grades.
+  /// Implements the Repository Pattern for data access and comprehensive validation.
   /// </summary>
   public class Program
   {
@@ -69,12 +70,14 @@ namespace Training_Management_System_ITI_Project
 
       // Register Repository Pattern implementations for dependency injection
       // Each repository handles data access for a specific entity type
+      builder.Services.AddScoped<IUserRepository, UserRepository>();
       builder.Services.AddScoped<ICourseRepository, CourseRepository>();
       builder.Services.AddScoped<ISessionRepository, SessionRepository>();
-      builder.Services.AddScoped<IUserRepository, UserRepository>();
-      builder.Services.AddScoped<IGradeRepository, GradeRepository>(); var app = builder.Build();
+      builder.Services.AddScoped<IGradeRepository, GradeRepository>();
 
-      // Initialize database and seed default data
+      var app = builder.Build();
+
+      // Initialize database
       await InitializeDatabaseAsync(app);
 
       // Configure the HTTP request pipeline for different environments
@@ -110,131 +113,20 @@ namespace Training_Management_System_ITI_Project
     }
 
     /// <summary>
-    /// Initializes the database and seeds default data including the super admin user
+    /// Initializes the database and ensures all tables are created
     /// </summary>
     /// <param name="app">The web application instance</param>
     private static async Task InitializeDatabaseAsync(WebApplication app)
     {
       using var scope = app.Services.CreateScope();
       var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-      var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-      var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
-      // Ensure database is created
+      // Ensure database is created with all tables
       await context.Database.EnsureCreatedAsync();
 
-      // Create roles if they don't exist
-      await CreateRolesAsync(roleManager);
-
-      // Create default super admin user
-      await CreateDefaultSuperAdminAsync(userManager);
-
-      // Sync Identity users into LegacyUsers for legacy features (e.g., instructor dropdowns)
-      await SyncLegacyUsersAsync(context, userManager);
-    }
-
-    /// <summary>
-    /// Creates the default roles in the system
-    /// </summary>
-    /// <param name="roleManager">Role manager for creating roles</param>
-    private static async Task CreateRolesAsync(RoleManager<IdentityRole> roleManager)
-    {
-      string[] roleNames = { "SuperAdmin", "Admin", "Instructor", "Trainee" };
-
-      foreach (var roleName in roleNames)
-      {
-        if (!await roleManager.RoleExistsAsync(roleName))
-        {
-          await roleManager.CreateAsync(new IdentityRole(roleName));
-        }
-      }
-    }
-
-    /// <summary>
-    /// Creates the default super admin user if it doesn't exist
-    /// </summary>
-    /// <param name="userManager">User manager for creating users</param>
-    private static async Task CreateDefaultSuperAdminAsync(UserManager<ApplicationUser> userManager)
-    {
-      const string superAdminEmail = "superadmin@trainingms.com";
-      const string superAdminPassword = "SuperAdmin123!";
-
-      var superAdmin = await userManager.FindByEmailAsync(superAdminEmail);
-      if (superAdmin == null)
-      {
-        superAdmin = new ApplicationUser
-        {
-          UserName = superAdminEmail,
-          Email = superAdminEmail,
-          FullName = "System Super Administrator",
-          Role = UserRole.SuperAdmin,
-          EmailConfirmed = true,
-          IsActive = true
-        };
-
-        var result = await userManager.CreateAsync(superAdmin, superAdminPassword);
-        if (result.Succeeded)
-        {
-          await userManager.AddToRoleAsync(superAdmin, "SuperAdmin");
-          Console.WriteLine($"Default Super Admin created: {superAdminEmail}");
-          Console.WriteLine($"Default Password: {superAdminPassword}");
-          Console.WriteLine("Please change this password immediately after first login!");
-        }
-      }
-    }
-
-    private static async Task SyncLegacyUsersAsync(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
-    {
-      var identityUsers = userManager.Users.ToList();
-
-      // Load existing legacy users into lookup by email
-      var existingLegacyUsers = context.LegacyUsers.ToList();
-      var emailToLegacyUser = existingLegacyUsers.ToDictionary(u => u.Email.ToLower());
-
-      foreach (var identityUser in identityUsers)
-      {
-        var emailKey = (identityUser.Email ?? string.Empty).ToLower();
-        if (string.IsNullOrWhiteSpace(emailKey))
-        {
-          continue;
-        }
-
-        if (emailToLegacyUser.TryGetValue(emailKey, out var legacyUser))
-        {
-          // Update name/role if changed
-          var desiredName = identityUser.FullName;
-          var desiredRole = identityUser.Role;
-
-          bool changed = false;
-          if (legacyUser.Name != desiredName)
-          {
-            legacyUser.Name = desiredName;
-            changed = true;
-          }
-          if (legacyUser.Role != desiredRole)
-          {
-            legacyUser.Role = desiredRole;
-            changed = true;
-          }
-          if (changed)
-          {
-            context.LegacyUsers.Update(legacyUser);
-          }
-        }
-        else
-        {
-          // Insert new legacy user mapped from identity user
-          var newLegacyUser = new User
-          {
-            Name = identityUser.FullName,
-            Email = identityUser.Email!,
-            Role = identityUser.Role
-          };
-          context.LegacyUsers.Add(newLegacyUser);
-        }
-      }
-
-      await context.SaveChangesAsync();
+      // Log successful database initialization
+      var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+      logger.LogInformation("Database initialized successfully");
     }
   }
 }
